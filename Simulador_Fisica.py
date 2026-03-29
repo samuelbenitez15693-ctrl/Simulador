@@ -90,25 +90,6 @@ def segunda_ley(masa, fuerzas_x, fuerzas_y, rozamiento=0, t_max=10):
             "Fx": Fx, "Fy": Fy}
 
 
-def plano_inclinado(masa, angulo, uk=0.0):
-    """Bloque en plano inclinado con fricción"""
-    g       = 9.8
-    ang_rad = math.radians(angulo)
-    N       = masa * g * math.cos(ang_rad)
-    Fg_par  = masa * g * math.sin(ang_rad)
-    Ff      = uk * N
-    F_neta  = Fg_par - Ff
-    a       = F_neta / masa
-
-    t_max = 5 if a > 0 else 2
-    t     = np.linspace(0, t_max, 500)
-    x     = 0.5 * a * t**2
-    v     = a * t
-
-    return {"t": t, "x": x, "v": v, "a": a,
-            "N": N, "Fg_par": Fg_par, "Ff": Ff, "F_neta": F_neta}
-
-
 # ─────────────────────────────────────────────
 #  VENTANA DE GRÁFICAS
 # ─────────────────────────────────────────────
@@ -165,7 +146,7 @@ def mostrar_grafica(datos, titulo, modo):
         axes[1].set_ylabel("|v| (m/s)", color=SUBTEXT, fontsize=8)
         axes[1].grid(alpha=0.15)
 
-    elif modo in ("newton", "plano"):
+    elif modo == "newton":
         axes[0].plot(t, datos["x"], color=ACCENT, lw=2)
         axes[0].set_title("Posición vs Tiempo", color=TEXT,
                           fontsize=10, fontfamily="Courier New")
@@ -389,61 +370,6 @@ def tab_newton(notebook):
 
 
 # ─────────────────────────────────────────────
-#  PANEL: PLANO INCLINADO
-# ─────────────────────────────────────────────
-
-def tab_plano(notebook):
-    tab = tk.Frame(notebook, bg=BG)
-    notebook.add(tab, text="  Plano Inclinado  ")
-
-    tk.Label(tab, text="Bloque en Plano Inclinado",
-             bg=BG, fg=ACCENT, font=FONT_SUB).pack(pady=(20, 4))
-    tk.Label(tab, text="a = g·(sin θ − μₖ·cos θ)",
-             bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(pady=(0, 14))
-
-    frame = tk.Frame(tab, bg=PANEL, bd=0, padx=24, pady=18)
-    frame.pack(padx=40, fill="x")
-
-    masa = make_entry(frame, "Masa del bloque m  (kg)", "10")
-    ang  = make_entry(frame, "Ángulo del plano θ  (°)", "30")
-    uk   = make_entry(frame, "Coef. rozamiento cinético μₖ", "0.2")
-
-    def calcular():
-        try:
-            m    = float(masa.get())
-            a_v  = float(ang.get())
-            uk_v = float(uk.get())
-            if not (0 < a_v < 90):
-                messagebox.showwarning("Advertencia",
-                    "El ángulo debe estar entre 0° y 90°.")
-                return
-            datos = plano_inclinado(m, a_v, uk_v)
-            estado = "Desliza ↓" if datos["a"] > 0 else "En reposo / sube"
-            res = (
-                f"► Estado del bloque:      {estado}\n"
-                f"► Aceleración:            {datos['a']:.4f} m/s²\n"
-                f"► Normal N:               {datos['N']:.3f} N\n"
-                f"► Componente paralela Fg: {datos['Fg_par']:.3f} N\n"
-                f"► Fricción Ff:            {datos['Ff']:.3f} N\n"
-                f"► Fuerza neta:            {datos['F_neta']:.3f} N\n\n"
-                f"  g = 9.8 m/s²,  θ = {a_v}°,  μₖ = {uk_v}\n"
-                f"  N = m·g·cos(θ) = {datos['N']:.3f} N\n"
-            )
-            resultado_box(tab, res)
-            mostrar_grafica({"t": datos["t"], "x": datos["x"],
-                             "v": datos["v"]},
-                            "Plano Inclinado", "plano")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos válidos.")
-
-    tk.Button(tab, text="▶  Simular", bg=ACCENT, fg=BG,
-              font=FONT_SUB, relief="flat", bd=0,
-              padx=20, pady=8, cursor="hand2",
-              command=calcular).pack(pady=22)
-    return tab
-
-
-# ─────────────────────────────────────────────
 #  VENTANA PRINCIPAL
 # ─────────────────────────────────────────────
 
@@ -495,7 +421,6 @@ def main():
     tab_mrua(notebook)
     tab_parabolico(notebook)
     tab_newton(notebook)
-    tab_plano(notebook)
 
     # ── Footer ──────────────────────────────
     tk.Label(root,
