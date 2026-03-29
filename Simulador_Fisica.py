@@ -1,6 +1,7 @@
 """
-Simulador de Física 1 - Cinemática y Dinámica
+Simulador de Física I - Cinemática y Dinámica
 Universidad - Física I
+Todo en una sola ventana | Resuelve incógnitas | Paleta blanco/verde
 Requiere: pip install matplotlib numpy
 """
 
@@ -8,55 +9,59 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import math
 
 # ─────────────────────────────────────────────
-#  ESTILOS / CONSTANTES
+#  PALETA: BLANCO Y VERDE
 # ─────────────────────────────────────────────
-BG       = "#0f1117"
-PANEL    = "#1a1d27"
-ACCENT   = "#4f8ef7"
-ACCENT2  = "#f7a14f"
-TEXT     = "#e8eaf0"
-SUBTEXT  = "#8890a4"
-SUCCESS  = "#4fca7a"
-BORDER   = "#2a2d3a"
+BG       = "#f5f9f5"          # fondo principal blanco-verdoso
+PANEL    = "#ffffff"          # paneles blancos
+ACCENT   = "#1a7a3c"          # verde oscuro principal
+ACCENT2  = "#27ae60"          # verde medio
+ACCENT3  = "#52c77d"          # verde claro
+TEXT     = "#1a2e1a"          # texto oscuro
+SUBTEXT  = "#4a6b4a"          # subtexto verde grisáceo
+SUCCESS  = "#0d5c2e"          # verde resultado
+BORDER   = "#b8dfc8"          # borde suave verde
+BG_ENTRY = "#eaf5ee"          # fondo inputs
+SIDEBAR  = "#1a7a3c"          # barra lateral verde oscuro
+HEADER   = "#eaf7ef"          # header suave
 
-FONT_TITLE  = ("Courier New", 22, "bold")
-FONT_SUB    = ("Courier New", 11, "bold")
-FONT_LABEL  = ("Courier New", 10)
-FONT_SMALL  = ("Courier New", 9)
-FONT_RESULT = ("Courier New", 10, "bold")
+FONT_TITLE  = ("Courier New", 26, "bold")
+FONT_SUB    = ("Courier New", 14, "bold")
+FONT_LABEL  = ("Courier New", 12)
+FONT_SMALL  = ("Courier New", 11)
+FONT_RESULT = ("Courier New", 12, "bold")
+FONT_INPUT  = ("Courier New", 12)
+FONT_BTN    = ("Courier New", 13, "bold")
+FONT_TAB    = ("Courier New", 12, "bold")
+FONT_SOLVE  = ("Courier New", 11, "italic")
+
 
 # ─────────────────────────────────────────────
 #  FÍSICA: CINEMÁTICA
 # ─────────────────────────────────────────────
 
 def cinematica_mrua(v0, a, t_max, angulo=0):
-    """Movimiento rectilíneo uniformemente acelerado (puede ser proyectil)"""
     ang_rad = math.radians(angulo)
     v0x = v0 * math.cos(ang_rad)
     v0y = v0 * math.sin(ang_rad)
     g   = 9.8
 
-    t = np.linspace(0, t_max, 500)
+    t = np.linspace(0, t_max, 600)
 
     if angulo == 0:
-        # MRUA puro
         x  = v0x * t + 0.5 * a * t**2
         vx = v0x + a * t
         ax = np.full_like(t, a)
         return {"t": t, "x": x, "v": vx, "a": ax, "tipo": "MRUA"}
     else:
-        # Tiro parabólico
         x  = v0x * t
         y  = v0y * t - 0.5 * g * t**2
         vx = np.full_like(t, v0x)
         vy = v0y - g * t
         v  = np.sqrt(vx**2 + vy**2)
-        # Truncar cuando y < 0
         idx = np.where(y < 0)[0]
         if len(idx) > 0:
             cut = idx[0]
@@ -66,19 +71,14 @@ def cinematica_mrua(v0, a, t_max, angulo=0):
                 "y_max": float(np.max(y)) if len(y) > 0 else 0}
 
 
-# ─────────────────────────────────────────────
-#  FÍSICA: DINÁMICA
-# ─────────────────────────────────────────────
-
 def segunda_ley(masa, fuerzas_x, fuerzas_y, rozamiento=0, t_max=10):
-    """Segunda Ley de Newton con múltiples fuerzas"""
     Fx = sum(fuerzas_x) - rozamiento
     Fy = sum(fuerzas_y)
     ax = Fx / masa
     ay = Fy / masa
     a_total = math.sqrt(ax**2 + ay**2)
 
-    t  = np.linspace(0, t_max, 500)
+    t  = np.linspace(0, t_max, 600)
     vx = ax * t
     vy = ay * t
     v  = np.sqrt(vx**2 + vy**2)
@@ -91,342 +91,685 @@ def segunda_ley(masa, fuerzas_x, fuerzas_y, rozamiento=0, t_max=10):
 
 
 # ─────────────────────────────────────────────
-#  VENTANA DE GRÁFICAS
+#  SOLVER DE INCÓGNITAS MRUA
 # ─────────────────────────────────────────────
 
-def mostrar_grafica(datos, titulo, modo):
-    win = tk.Toplevel()
-    win.title(titulo)
-    win.configure(bg=BG)
-    win.geometry("900x600")
+def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
+    """
+    Dadas 3 de 5 variables, calcula las 2 faltantes.
+    Ecuaciones MRUA:
+      vf = v0 + a*t
+      x  = v0*t + 0.5*a*t^2
+      vf^2 = v0^2 + 2*a*x
+      x  = 0.5*(v0+vf)*t
+    """
+    knowns = sum(v is not None for v in [v0, vf, a, t, x])
+    if knowns < 3:
+        return None, "Necesitas al menos 3 valores conocidos."
 
-    plt.style.use("dark_background")
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5),
-                             facecolor="#0f1117")
-    fig.suptitle(titulo, color=TEXT, fontsize=13,
-                 fontfamily="Courier New", fontweight="bold")
+    try:
+        # Intentar despejar con las ecuaciones disponibles
+        # Caso: v0, a, t → vf, x
+        if v0 is not None and a is not None and t is not None and vf is None and x is None:
+            vf = v0 + a * t
+            x  = v0 * t + 0.5 * a * t**2
 
-    for ax in axes:
-        ax.set_facecolor(PANEL)
-        ax.tick_params(colors=SUBTEXT, labelsize=8)
-        for sp in ax.spines.values():
-            sp.set_edgecolor(BORDER)
+        # Caso: v0, vf, t → a, x
+        elif v0 is not None and vf is not None and t is not None and a is None and x is None:
+            a = (vf - v0) / t
+            x = 0.5 * (v0 + vf) * t
 
-    t = datos["t"]
+        # Caso: v0, vf, a → t, x
+        elif v0 is not None and vf is not None and a is not None and t is None and x is None:
+            if a == 0:
+                return None, "Si a=0, el tiempo es indeterminado con solo v0 y vf."
+            t = (vf - v0) / a
+            x = 0.5 * (v0 + vf) * t
 
-    if modo == "mrua":
-        axes[0].plot(t, datos["x"], color=ACCENT, lw=2)
-        axes[0].set_title("Posición vs Tiempo", color=TEXT,
-                          fontsize=10, fontfamily="Courier New")
-        axes[0].set_xlabel("t (s)", color=SUBTEXT, fontsize=8)
-        axes[0].set_ylabel("x (m)", color=SUBTEXT, fontsize=8)
-        axes[0].grid(alpha=0.15)
+        # Caso: v0, a, x → vf, t
+        elif v0 is not None and a is not None and x is not None and vf is None and t is None:
+            disc = v0**2 + 2 * a * x
+            if disc < 0:
+                return None, "No hay solución real (discriminante negativo)."
+            vf = math.sqrt(disc)
+            if a != 0:
+                t = (vf - v0) / a
+            else:
+                t = x / v0 if v0 != 0 else None
 
-        axes[1].plot(t, datos["v"], color=ACCENT2, lw=2)
-        axes[1].set_title("Velocidad vs Tiempo", color=TEXT,
-                          fontsize=10, fontfamily="Courier New")
-        axes[1].set_xlabel("t (s)", color=SUBTEXT, fontsize=8)
-        axes[1].set_ylabel("v (m/s)", color=SUBTEXT, fontsize=8)
-        axes[1].grid(alpha=0.15)
+        # Caso: vf, a, t → v0, x
+        elif vf is not None and a is not None and t is not None and v0 is None and x is None:
+            v0 = vf - a * t
+            x  = v0 * t + 0.5 * a * t**2
 
-    elif modo == "parabolico":
-        axes[0].plot(datos["x"], datos["y"], color=ACCENT, lw=2)
-        axes[0].fill_between(datos["x"], 0, datos["y"],
-                             alpha=0.08, color=ACCENT)
-        axes[0].set_title("Trayectoria", color=TEXT,
-                          fontsize=10, fontfamily="Courier New")
-        axes[0].set_xlabel("x (m)", color=SUBTEXT, fontsize=8)
-        axes[0].set_ylabel("y (m)", color=SUBTEXT, fontsize=8)
-        axes[0].grid(alpha=0.15)
+        # Caso: v0, vf, x → a, t
+        elif v0 is not None and vf is not None and x is not None and a is None and t is None:
+            a = (vf**2 - v0**2) / (2 * x)
+            t = 2 * x / (v0 + vf) if (v0 + vf) != 0 else None
 
-        axes[1].plot(t, datos["v"], color=ACCENT2, lw=2)
-        axes[1].set_title("Velocidad vs Tiempo", color=TEXT,
-                          fontsize=10, fontfamily="Courier New")
-        axes[1].set_xlabel("t (s)", color=SUBTEXT, fontsize=8)
-        axes[1].set_ylabel("|v| (m/s)", color=SUBTEXT, fontsize=8)
-        axes[1].grid(alpha=0.15)
+        # Caso: a, t, x → v0, vf
+        elif a is not None and t is not None and x is not None and v0 is None and vf is None:
+            v0 = (x - 0.5 * a * t**2) / t if t != 0 else None
+            if v0 is not None:
+                vf = v0 + a * t
 
-    elif modo == "newton":
-        axes[0].plot(t, datos["x"], color=ACCENT, lw=2)
-        axes[0].set_title("Posición vs Tiempo", color=TEXT,
-                          fontsize=10, fontfamily="Courier New")
-        axes[0].set_xlabel("t (s)", color=SUBTEXT, fontsize=8)
-        axes[0].set_ylabel("x (m)", color=SUBTEXT, fontsize=8)
-        axes[0].grid(alpha=0.15)
+        # Caso: vf, t, x → v0, a
+        elif vf is not None and t is not None and x is not None and v0 is None and a is None:
+            v0 = 2 * x / t - vf if t != 0 else None
+            if v0 is not None:
+                a = (vf - v0) / t
 
-        axes[1].plot(t, datos["v"], color=ACCENT2, lw=2)
-        axes[1].set_title("Velocidad vs Tiempo", color=TEXT,
-                          fontsize=10, fontfamily="Courier New")
-        axes[1].set_xlabel("t (s)", color=SUBTEXT, fontsize=8)
-        axes[1].set_ylabel("v (m/s)", color=SUBTEXT, fontsize=8)
-        axes[1].grid(alpha=0.15)
+        # Caso: v0, t, x → vf, a  (5to conocido puede ser cualquiera)
+        elif v0 is not None and t is not None and x is not None and a is None and vf is None:
+            a  = 2 * (x - v0 * t) / t**2 if t != 0 else None
+            if a is not None:
+                vf = v0 + a * t
 
-    plt.tight_layout()
-    canvas = FigureCanvasTkAgg(fig, master=win)
-    canvas.draw()
-    canvas.get_tk_widget().pack(fill="both", expand=True,
-                                padx=10, pady=10)
+        else:
+            # Combinación con 4+ knowns → solo verificar/completar
+            if v0 is not None and a is not None and t is not None:
+                if vf is None: vf = v0 + a * t
+                if x  is None: x  = v0 * t + 0.5 * a * t**2
+            elif v0 is not None and vf is not None and t is not None:
+                if a is None: a = (vf - v0) / t
+                if x is None: x = 0.5 * (v0 + vf) * t
 
-    tk.Button(win, text="✕  Cerrar", bg=BORDER, fg=TEXT,
-              font=FONT_SMALL, relief="flat", bd=0,
-              padx=12, pady=6,
-              command=win.destroy).pack(pady=(0, 10))
+        return {"v0": v0, "vf": vf, "a": a, "t": t, "x": x}, None
+
+    except Exception as e:
+        return None, f"Error al resolver: {e}"
 
 
 # ─────────────────────────────────────────────
-#  HELPERS UI
+#  SOLVER TIRO PARABÓLICO (incógnitas)
 # ─────────────────────────────────────────────
 
-def make_entry(parent, label, default="0", width=14):
+def resolver_parabolico(v0=None, angulo=None, x_max=None, y_max=None, t_vuelo=None):
+    """Dadas algunas variables, calcula las faltantes."""
+    g = 9.8
+    try:
+        resultados = {}
+
+        if v0 is not None and angulo is not None:
+            rad = math.radians(angulo)
+            v0x = v0 * math.cos(rad)
+            v0y = v0 * math.sin(rad)
+            t_v  = 2 * v0y / g
+            x_m  = v0x * t_v
+            y_m  = v0y**2 / (2 * g)
+            resultados = {"v0": v0, "angulo": angulo,
+                          "t_vuelo": t_v, "x_max": x_m, "y_max": y_m,
+                          "v0x": v0x, "v0y": v0y}
+
+        elif x_max is not None and angulo is not None:
+            rad = math.radians(angulo)
+            v0_calc = math.sqrt(x_max * g / math.sin(2 * rad))
+            v0x = v0_calc * math.cos(rad)
+            v0y = v0_calc * math.sin(rad)
+            t_v = 2 * v0y / g
+            y_m = v0y**2 / (2 * g)
+            resultados = {"v0": v0_calc, "angulo": angulo,
+                          "t_vuelo": t_v, "x_max": x_max, "y_max": y_m,
+                          "v0x": v0x, "v0y": v0y}
+
+        elif y_max is not None and angulo is not None:
+            rad = math.radians(angulo)
+            v0y = math.sqrt(2 * g * y_max)
+            v0_calc = v0y / math.sin(rad)
+            v0x = v0_calc * math.cos(rad)
+            t_v = 2 * v0y / g
+            x_m = v0x * t_v
+            resultados = {"v0": v0_calc, "angulo": angulo,
+                          "t_vuelo": t_v, "x_max": x_m, "y_max": y_max,
+                          "v0x": v0x, "v0y": v0y}
+
+        elif v0 is not None and x_max is not None:
+            # sin(2θ) = x_max * g / v0²
+            val = x_max * g / v0**2
+            if abs(val) > 1:
+                return None, "No hay solución: el alcance es mayor al máximo posible."
+            ang = math.degrees(0.5 * math.asin(val))
+            rad = math.radians(ang)
+            v0x = v0 * math.cos(rad)
+            v0y = v0 * math.sin(rad)
+            t_v = 2 * v0y / g
+            y_m = v0y**2 / (2 * g)
+            resultados = {"v0": v0, "angulo": ang,
+                          "t_vuelo": t_v, "x_max": x_max, "y_max": y_m,
+                          "v0x": v0x, "v0y": v0y}
+        else:
+            return None, "Combinación de datos insuficiente o no soportada."
+
+        return resultados, None
+    except Exception as e:
+        return None, f"Error: {e}"
+
+
+# ─────────────────────────────────────────────
+#  HELPER: ENTRADA CON LABEL
+# ─────────────────────────────────────────────
+
+def make_entry(parent, label, default="", width=12, hint=""):
     frame = tk.Frame(parent, bg=PANEL)
-    frame.pack(fill="x", pady=3)
-    tk.Label(frame, text=label, bg=PANEL, fg=SUBTEXT,
-             font=FONT_LABEL, width=28, anchor="w").pack(side="left")
+    frame.pack(fill="x", pady=4)
+
+    lbl_frame = tk.Frame(frame, bg=PANEL)
+    lbl_frame.pack(side="left", fill="x", expand=True)
+
+    tk.Label(lbl_frame, text=label, bg=PANEL, fg=TEXT,
+             font=FONT_LABEL, anchor="w").pack(side="left")
+    if hint:
+        tk.Label(lbl_frame, text=f"  {hint}", bg=PANEL, fg=ACCENT3,
+                 font=FONT_SOLVE, anchor="w").pack(side="left")
+
     var = tk.StringVar(value=default)
-    ent = tk.Entry(frame, textvariable=var, bg=BORDER,
-                   fg=TEXT, font=FONT_LABEL, width=width,
-                   relief="flat", insertbackground=TEXT,
-                   bd=4)
-    ent.pack(side="left", padx=(4, 0))
+    ent = tk.Entry(frame, textvariable=var, bg=BG_ENTRY,
+                   fg=TEXT, font=FONT_INPUT, width=width,
+                   relief="solid", bd=1, insertbackground=ACCENT,
+                   highlightthickness=2,
+                   highlightcolor=ACCENT,
+                   highlightbackground=BORDER)
+    ent.pack(side="right", padx=(8, 0))
     return var
 
 
-def resultado_box(parent, texto):
-    """Muestra un cuadro de resultados"""
-    win = tk.Toplevel(parent)
-    win.title("Resultados")
-    win.configure(bg=BG)
-    win.geometry("460x360")
-    win.resizable(False, False)
-
-    tk.Label(win, text="RESULTADOS", bg=BG, fg=ACCENT,
-             font=FONT_SUB).pack(pady=(18, 4))
-
-    box = tk.Text(win, bg=PANEL, fg=SUCCESS,
-                  font=FONT_RESULT, relief="flat", bd=8,
-                  wrap="word", height=14)
-    box.insert("1.0", texto)
-    box.configure(state="disabled")
-    box.pack(padx=20, pady=8, fill="both", expand=True)
-
-    tk.Button(win, text="Cerrar", bg=ACCENT, fg=BG,
-              font=FONT_SUB, relief="flat", bd=0,
-              padx=16, pady=6,
-              command=win.destroy).pack(pady=(0, 14))
+def get_val(var):
+    """Devuelve float o None si está vacío/inválido."""
+    s = var.get().strip()
+    if s == "" or s == "?":
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
 
 
 # ─────────────────────────────────────────────
-#  PANEL: CINEMÁTICA MRUA
+#  CLASE PRINCIPAL: VENTANA ÚNICA
 # ─────────────────────────────────────────────
 
-def tab_mrua(notebook):
-    tab = tk.Frame(notebook, bg=BG)
-    notebook.add(tab, text="  MRUA  ")
+class SimuladorFisica:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Simulador de Física I")
+        self.root.configure(bg=BG)
+        self.root.geometry("1280x820")
+        self.root.minsize(1100, 720)
 
-    tk.Label(tab, text="Movimiento Rectilíneo\nUniformemente Acelerado",
-             bg=BG, fg=ACCENT, font=FONT_SUB,
-             justify="center").pack(pady=(20, 4))
-    tk.Label(tab, text="x = x₀ + v₀·t + ½·a·t²",
-             bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(pady=(0, 14))
+        self._build_ui()
 
-    frame = tk.Frame(tab, bg=PANEL, bd=0, relief="flat",
-                     padx=24, pady=18)
-    frame.pack(padx=40, fill="x")
+    # ── UI PRINCIPAL ─────────────────────────
+    def _build_ui(self):
+        # ── Header ──
+        header = tk.Frame(self.root, bg=ACCENT, height=72)
+        header.pack(fill="x")
+        header.pack_propagate(False)
 
-    v0  = make_entry(frame, "Velocidad inicial v₀  (m/s)", "10")
-    a   = make_entry(frame, "Aceleración a  (m/s²)", "2")
-    t   = make_entry(frame, "Tiempo máximo  (s)", "5")
+        tk.Label(header, text="⚛  FÍSICA I", bg=ACCENT, fg="white",
+                 font=FONT_TITLE).pack(side="left", padx=28, pady=10)
+        tk.Label(header, text="Simulador · Cinemática · Dinámica · Resolutor de Incógnitas",
+                 bg=ACCENT, fg="#c8f0d8", font=FONT_SMALL).pack(side="left", pady=10)
 
-    def calcular():
-        try:
-            datos = cinematica_mrua(float(v0.get()), float(a.get()),
-                                    float(t.get()))
-            x_f = datos["x"][-1]
-            v_f = datos["v"][-1]
-            res = (
-                f"► Posición final:        {x_f:.3f} m\n"
-                f"► Velocidad final:       {v_f:.3f} m/s\n"
-                f"► Aceleración:           {float(a.get()):.3f} m/s²\n\n"
-                f"  Ecuaciones usadas:\n"
-                f"  x(t) = {float(v0.get())}·t + ½·({float(a.get())})·t²\n"
-                f"  v(t) = {float(v0.get())} + {float(a.get())}·t\n"
-            )
-            resultado_box(tab, res)
-            mostrar_grafica(datos, "MRUA – Cinemática", "mrua")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos válidos.")
+        # ── Layout principal: sidebar + contenido ──
+        main = tk.Frame(self.root, bg=BG)
+        main.pack(fill="both", expand=True)
 
-    tk.Button(tab, text="▶  Simular", bg=ACCENT, fg=BG,
-              font=FONT_SUB, relief="flat", bd=0,
-              padx=20, pady=8, cursor="hand2",
-              command=calcular).pack(pady=22)
-    return tab
+        # SIDEBAR de pestañas
+        self.sidebar = tk.Frame(main, bg=SIDEBAR, width=190)
+        self.sidebar.pack(side="left", fill="y")
+        self.sidebar.pack_propagate(False)
 
+        tk.Label(self.sidebar, text="MÓDULOS", bg=SIDEBAR, fg="#c8f0d8",
+                 font=("Courier New", 11, "bold")).pack(pady=(20, 8))
+        tk.Frame(self.sidebar, bg="#2d9e5c", height=1).pack(fill="x", padx=16)
 
-# ─────────────────────────────────────────────
-#  PANEL: TIRO PARABÓLICO
-# ─────────────────────────────────────────────
+        # Panel de contenido (derecha)
+        self.content = tk.Frame(main, bg=BG)
+        self.content.pack(side="left", fill="both", expand=True)
 
-def tab_parabolico(notebook):
-    tab = tk.Frame(notebook, bg=BG)
-    notebook.add(tab, text="  Tiro Parabólico  ")
+        # Panel dividido: formulario | gráfica
+        self.left_panel = tk.Frame(self.content, bg=PANEL,
+                                   width=430, relief="flat", bd=0)
+        self.left_panel.pack(side="left", fill="y", padx=(12, 6), pady=12)
+        self.left_panel.pack_propagate(False)
 
-    tk.Label(tab, text="Tiro Parabólico",
-             bg=BG, fg=ACCENT, font=FONT_SUB).pack(pady=(20, 4))
-    tk.Label(tab, text="y = v₀·sin(θ)·t − ½·g·t²",
-             bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(pady=(0, 14))
+        self.right_panel = tk.Frame(self.content, bg=PANEL,
+                                    relief="flat", bd=0)
+        self.right_panel.pack(side="left", fill="both", expand=True,
+                              padx=(6, 12), pady=12)
 
-    frame = tk.Frame(tab, bg=PANEL, bd=0, padx=24, pady=18)
-    frame.pack(padx=40, fill="x")
+        # Matplotlib figure en el panel derecho
+        plt.style.use("default")
+        self.fig, self.axes = plt.subplots(1, 2, figsize=(8, 4),
+                                           facecolor=PANEL)
+        self.fig.subplots_adjust(left=0.1, right=0.97,
+                                 top=0.88, bottom=0.15, wspace=0.38)
+        for ax in self.axes:
+            ax.set_facecolor(BG_ENTRY)
+            ax.tick_params(colors=SUBTEXT, labelsize=9)
+            for sp in ax.spines.values():
+                sp.set_edgecolor(BORDER)
 
-    v0  = make_entry(frame, "Velocidad inicial v₀  (m/s)", "20")
-    ang = make_entry(frame, "Ángulo de lanzamiento θ  (°)", "45")
-    t   = make_entry(frame, "Tiempo máximo simulación (s)", "4")
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.right_panel)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True,
+                                         padx=8, pady=8)
 
-    def calcular():
-        try:
-            a_val = float(ang.get())
-            if not (0 < a_val < 90):
-                messagebox.showwarning("Advertencia",
-                    "El ángulo debe estar entre 0° y 90°.")
+        # Área de resultados (parte inferior del panel izquierdo)
+        self.result_frame = tk.Frame(self.left_panel, bg=BG_ENTRY,
+                                     relief="solid", bd=1)
+
+        # Crear pestañas en sidebar
+        self.tabs = {}
+        self.tab_frames = {}
+        opciones = [
+            ("📐  MRUA", "mrua"),
+            ("🎯  Tiro Parabólico", "parabolico"),
+            ("⚡  2ª Ley Newton", "newton"),
+        ]
+        self.btn_tabs = {}
+        for label, key in opciones:
+            btn = tk.Button(self.sidebar, text=label, bg=SIDEBAR, fg="white",
+                            font=("Courier New", 12), relief="flat", bd=0,
+                            anchor="w", padx=18, pady=10, cursor="hand2",
+                            activebackground=ACCENT2, activeforeground="white",
+                            command=lambda k=key: self._switch_tab(k))
+            btn.pack(fill="x")
+            self.btn_tabs[key] = btn
+
+        tk.Frame(self.sidebar, bg="#2d9e5c", height=1).pack(fill="x",
+                                                             padx=16, pady=8)
+        tk.Label(self.sidebar,
+                 text="💡 Deja en blanco\nlas incógnitas\na resolver",
+                 bg=SIDEBAR, fg="#a8dfc0", font=("Courier New", 10),
+                 justify="center").pack(pady=6)
+
+        # Construir contenido de cada pestaña
+        self._build_mrua()
+        self._build_parabolico()
+        self._build_newton()
+
+        # Activar primera pestaña
+        self._switch_tab("mrua")
+
+    # ── SWITCH DE PESTAÑA ────────────────────
+    def _switch_tab(self, key):
+        for k, frame in self.tab_frames.items():
+            frame.pack_forget()
+        for k, btn in self.btn_tabs.items():
+            btn.configure(bg=SIDEBAR, fg="white")
+
+        self.tab_frames[key].pack(fill="both", expand=True, padx=16, pady=12)
+        self.btn_tabs[key].configure(bg=ACCENT2, fg="white")
+        self._clear_graph()
+        self._clear_result()
+
+    def _clear_graph(self):
+        for ax in self.axes:
+            ax.cla()
+            ax.set_facecolor(BG_ENTRY)
+            for sp in ax.spines.values():
+                sp.set_edgecolor(BORDER)
+        self.canvas.draw()
+
+    def _clear_result(self):
+        self.result_frame.pack_forget()
+        for w in self.result_frame.winfo_children():
+            w.destroy()
+
+    # ── MOSTRAR RESULTADO ────────────────────
+    def _show_result(self, lines):
+        self._clear_result()
+        self.result_frame.pack(fill="x", padx=8, pady=(8, 8))
+
+        tk.Label(self.result_frame, text="▼  RESULTADOS",
+                 bg=BG_ENTRY, fg=ACCENT, font=FONT_SUB).pack(
+                     anchor="w", padx=10, pady=(8, 4))
+
+        txt = tk.Text(self.result_frame, bg=BG_ENTRY, fg=SUCCESS,
+                      font=FONT_RESULT, relief="flat", bd=4,
+                      wrap="word", height=len(lines) + 1,
+                      state="normal")
+        for line in lines:
+            txt.insert("end", line + "\n")
+        txt.configure(state="disabled")
+        txt.pack(padx=8, pady=(0, 8), fill="x")
+
+    # ── GRAFICAS ─────────────────────────────
+    def _plot(self, datos, modo, titulo):
+        for ax in self.axes:
+            ax.cla()
+            ax.set_facecolor(BG_ENTRY)
+            for sp in ax.spines.values():
+                sp.set_edgecolor(BORDER)
+            ax.tick_params(colors=SUBTEXT, labelsize=9)
+
+        self.fig.suptitle(titulo, color=ACCENT, fontsize=13,
+                          fontfamily="Courier New", fontweight="bold")
+        t = datos["t"]
+
+        if modo == "mrua":
+            self.axes[0].plot(t, datos["x"], color=ACCENT, lw=2.5)
+            self.axes[0].fill_between(t, 0, datos["x"],
+                                      alpha=0.12, color=ACCENT)
+            self.axes[0].set_title("Posición vs Tiempo", color=ACCENT,
+                                    fontsize=11, fontfamily="Courier New")
+            self.axes[0].set_xlabel("t (s)", color=SUBTEXT, fontsize=10)
+            self.axes[0].set_ylabel("x (m)", color=SUBTEXT, fontsize=10)
+            self.axes[0].grid(alpha=0.3, color=BORDER)
+
+            self.axes[1].plot(t, datos["v"], color=ACCENT2, lw=2.5)
+            self.axes[1].set_title("Velocidad vs Tiempo", color=ACCENT,
+                                    fontsize=11, fontfamily="Courier New")
+            self.axes[1].set_xlabel("t (s)", color=SUBTEXT, fontsize=10)
+            self.axes[1].set_ylabel("v (m/s)", color=SUBTEXT, fontsize=10)
+            self.axes[1].grid(alpha=0.3, color=BORDER)
+
+        elif modo == "parabolico":
+            self.axes[0].plot(datos["x"], datos["y"], color=ACCENT, lw=2.5)
+            self.axes[0].fill_between(datos["x"], 0, datos["y"],
+                                       alpha=0.12, color=ACCENT)
+            self.axes[0].set_title("Trayectoria", color=ACCENT,
+                                    fontsize=11, fontfamily="Courier New")
+            self.axes[0].set_xlabel("x (m)", color=SUBTEXT, fontsize=10)
+            self.axes[0].set_ylabel("y (m)", color=SUBTEXT, fontsize=10)
+            self.axes[0].grid(alpha=0.3, color=BORDER)
+
+            self.axes[1].plot(t, datos["v"], color=ACCENT2, lw=2.5)
+            self.axes[1].set_title("Velocidad vs Tiempo", color=ACCENT,
+                                    fontsize=11, fontfamily="Courier New")
+            self.axes[1].set_xlabel("t (s)", color=SUBTEXT, fontsize=10)
+            self.axes[1].set_ylabel("|v| (m/s)", color=SUBTEXT, fontsize=10)
+            self.axes[1].grid(alpha=0.3, color=BORDER)
+
+        elif modo == "newton":
+            self.axes[0].plot(t, datos["x"], color=ACCENT, lw=2.5)
+            self.axes[0].fill_between(t, 0, datos["x"],
+                                       alpha=0.12, color=ACCENT)
+            self.axes[0].set_title("Posición vs Tiempo", color=ACCENT,
+                                    fontsize=11, fontfamily="Courier New")
+            self.axes[0].set_xlabel("t (s)", color=SUBTEXT, fontsize=10)
+            self.axes[0].set_ylabel("x (m)", color=SUBTEXT, fontsize=10)
+            self.axes[0].grid(alpha=0.3, color=BORDER)
+
+            self.axes[1].plot(t, datos["v"], color=ACCENT2, lw=2.5)
+            self.axes[1].set_title("Velocidad vs Tiempo", color=ACCENT,
+                                    fontsize=11, fontfamily="Courier New")
+            self.axes[1].set_xlabel("t (s)", color=SUBTEXT, fontsize=10)
+            self.axes[1].set_ylabel("v (m/s)", color=SUBTEXT, fontsize=10)
+            self.axes[1].grid(alpha=0.3, color=BORDER)
+
+        self.canvas.draw()
+
+    # ─────────────────────────────────────────
+    #  PESTAÑA: MRUA
+    # ─────────────────────────────────────────
+    def _build_mrua(self):
+        frame = tk.Frame(self.left_panel, bg=PANEL)
+        self.tab_frames["mrua"] = frame
+
+        tk.Label(frame, text="Cinemática MRUA",
+                 bg=PANEL, fg=ACCENT, font=FONT_SUB).pack(anchor="w",
+                                                           pady=(0, 2))
+        tk.Label(frame, text="x = v₀·t + ½·a·t²     vf = v0 + a·t",
+                 bg=PANEL, fg=SUBTEXT, font=FONT_SMALL).pack(anchor="w",
+                                                              pady=(0, 8))
+        tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=(0, 10))
+
+        tk.Label(frame,
+                 text="💡 Deja en blanco las incógnitas (necesitas 3 datos):",
+                 bg=PANEL, fg=ACCENT2, font=("Courier New", 11, "italic")
+                 ).pack(anchor="w", pady=(0, 6))
+
+        self.mrua_v0 = make_entry(frame, "Vel. inicial  v₀  (m/s)", hint="? = incógnita")
+        self.mrua_vf = make_entry(frame, "Vel. final    vf  (m/s)")
+        self.mrua_a  = make_entry(frame, "Aceleración    a  (m/s²)")
+        self.mrua_t  = make_entry(frame, "Tiempo         t  (s)")
+        self.mrua_x  = make_entry(frame, "Desplazamiento x  (m)")
+
+        tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=10)
+
+        tk.Button(frame, text="▶  Calcular y Simular",
+                  bg=ACCENT, fg="white", font=FONT_BTN, relief="flat", bd=0,
+                  padx=16, pady=10, cursor="hand2",
+                  activebackground=ACCENT2, activeforeground="white",
+                  command=self._simular_mrua).pack(fill="x")
+
+        tk.Button(frame, text="↺  Limpiar",
+                  bg=BORDER, fg=TEXT, font=FONT_LABEL, relief="flat", bd=0,
+                  padx=10, pady=6, cursor="hand2",
+                  command=lambda: self._limpiar_mrua()
+                  ).pack(fill="x", pady=(6, 0))
+
+    def _limpiar_mrua(self):
+        for v in [self.mrua_v0, self.mrua_vf, self.mrua_a,
+                  self.mrua_t, self.mrua_x]:
+            v.set("")
+        self._clear_graph()
+        self._clear_result()
+
+    def _simular_mrua(self):
+        v0 = get_val(self.mrua_v0)
+        vf = get_val(self.mrua_vf)
+        a  = get_val(self.mrua_a)
+        t  = get_val(self.mrua_t)
+        x  = get_val(self.mrua_x)
+
+        res, err = resolver_mrua(v0, vf, a, t, x)
+        if err:
+            messagebox.showerror("Error al resolver", err)
+            return
+
+        v0r = res["v0"]; vfr = res["vf"]
+        ar  = res["a"];  tr  = res["t"]
+        xr  = res["x"]
+
+        # Validar que se resolvió todo
+        vals = [v0r, vfr, ar, tr, xr]
+        if any(v is None for v in vals):
+            messagebox.showwarning("Incompleto",
+                "No fue posible resolver todas las incógnitas con los datos dados.")
+            return
+
+        if tr <= 0:
+            messagebox.showwarning("Advertencia",
+                "El tiempo debe ser positivo.")
+            return
+
+        lines = [
+            f"  v₀  = {v0r:.4f} m/s",
+            f"  vf  = {vfr:.4f} m/s",
+            f"  a   = {ar:.4f} m/s²",
+            f"  t   = {tr:.4f} s",
+            f"  x   = {xr:.4f} m",
+            "",
+            f"  Verif: vf = {v0r:.3f} + {ar:.3f}×{tr:.3f}",
+            f"       = {v0r + ar*tr:.4f} m/s  ✔",
+        ]
+        self._show_result(lines)
+
+        # Graficar con los valores resueltos
+        datos = cinematica_mrua(v0r, ar, tr)
+        self._plot(datos, "mrua", "MRUA – Cinemática")
+
+    # ─────────────────────────────────────────
+    #  PESTAÑA: TIRO PARABÓLICO
+    # ─────────────────────────────────────────
+    def _build_parabolico(self):
+        frame = tk.Frame(self.left_panel, bg=PANEL)
+        self.tab_frames["parabolico"] = frame
+
+        tk.Label(frame, text="Tiro Parabólico",
+                 bg=PANEL, fg=ACCENT, font=FONT_SUB).pack(anchor="w",
+                                                           pady=(0, 2))
+        tk.Label(frame, text="y = v₀·sin(θ)·t − ½·g·t²    g = 9.8 m/s²",
+                 bg=PANEL, fg=SUBTEXT, font=FONT_SMALL).pack(anchor="w",
+                                                               pady=(0, 8))
+        tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=(0, 10))
+
+        tk.Label(frame,
+                 text="💡 Ingresa v₀+ángulo  O  alcance+ángulo  O  altura+ángulo:",
+                 bg=PANEL, fg=ACCENT2,
+                 font=("Courier New", 11, "italic")).pack(anchor="w",
+                                                           pady=(0, 6))
+
+        self.par_v0    = make_entry(frame, "Vel. inicial  v₀  (m/s)")
+        self.par_ang   = make_entry(frame, "Ángulo        θ   (°)")
+        self.par_xmax  = make_entry(frame, "Alcance       xₘₐₓ (m)")
+        self.par_ymax  = make_entry(frame, "Alt. máxima   yₘₐₓ (m)")
+
+        tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=10)
+
+        tk.Button(frame, text="▶  Calcular y Simular",
+                  bg=ACCENT, fg="white", font=FONT_BTN, relief="flat", bd=0,
+                  padx=16, pady=10, cursor="hand2",
+                  activebackground=ACCENT2, activeforeground="white",
+                  command=self._simular_parabolico).pack(fill="x")
+
+        tk.Button(frame, text="↺  Limpiar",
+                  bg=BORDER, fg=TEXT, font=FONT_LABEL, relief="flat", bd=0,
+                  padx=10, pady=6, cursor="hand2",
+                  command=lambda: [v.set("") for v in
+                                   [self.par_v0, self.par_ang,
+                                    self.par_xmax, self.par_ymax]]
+                  ).pack(fill="x", pady=(6, 0))
+
+    def _simular_parabolico(self):
+        v0   = get_val(self.par_v0)
+        ang  = get_val(self.par_ang)
+        xmax = get_val(self.par_xmax)
+        ymax = get_val(self.par_ymax)
+
+        res, err = resolver_parabolico(v0, ang, xmax, ymax)
+        if err:
+            messagebox.showerror("Error al resolver", err)
+            return
+
+        v0r   = res["v0"]
+        angr  = res["angulo"]
+        xmr   = res["x_max"]
+        ymr   = res["y_max"]
+        tvr   = res["t_vuelo"]
+        v0xr  = res["v0x"]
+        v0yr  = res["v0y"]
+
+        if not (0 < angr < 90):
+            messagebox.showwarning("Advertencia",
+                "El ángulo debe estar entre 0° y 90°.")
+            return
+
+        lines = [
+            f"  v₀        = {v0r:.4f} m/s",
+            f"  θ         = {angr:.4f}°",
+            f"  v₀ₓ       = {v0xr:.4f} m/s",
+            f"  v₀ᵧ       = {v0yr:.4f} m/s",
+            f"  Alcance   = {xmr:.4f} m",
+            f"  Alt. máx  = {ymr:.4f} m",
+            f"  T. vuelo  = {tvr:.4f} s",
+        ]
+        self._show_result(lines)
+
+        datos = cinematica_mrua(v0r, 0, tvr * 1.05, angulo=angr)
+        self._plot(datos, "parabolico", "Tiro Parabólico")
+
+    # ─────────────────────────────────────────
+    #  PESTAÑA: 2ª LEY DE NEWTON
+    # ─────────────────────────────────────────
+    def _build_newton(self):
+        frame = tk.Frame(self.left_panel, bg=PANEL)
+        self.tab_frames["newton"] = frame
+
+        tk.Label(frame, text="Segunda Ley de Newton",
+                 bg=PANEL, fg=ACCENT, font=FONT_SUB).pack(anchor="w",
+                                                           pady=(0, 2))
+        tk.Label(frame, text="ΣF = m · a",
+                 bg=PANEL, fg=SUBTEXT, font=FONT_SMALL).pack(anchor="w",
+                                                              pady=(0, 8))
+        tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=(0, 10))
+
+        tk.Label(frame,
+                 text="💡 Deja en blanco la incógnita (m, F o a):",
+                 bg=PANEL, fg=ACCENT2,
+                 font=("Courier New", 11, "italic")).pack(anchor="w",
+                                                          pady=(0, 6))
+
+        self.newt_masa = make_entry(frame, "Masa          m   (kg)", "")
+        self.newt_fx   = make_entry(frame, "Fuerza aplic. Fₓ  (N)", "")
+        self.newt_ff   = make_entry(frame, "Rozamiento    Ff  (N)", "0")
+        self.newt_a    = make_entry(frame, "Aceleración   a   (m/s²)", "")
+        self.newt_t    = make_entry(frame, "Tiempo simul. t   (s)", "8")
+
+        tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=10)
+
+        tk.Button(frame, text="▶  Calcular y Simular",
+                  bg=ACCENT, fg="white", font=FONT_BTN, relief="flat", bd=0,
+                  padx=16, pady=10, cursor="hand2",
+                  activebackground=ACCENT2, activeforeground="white",
+                  command=self._simular_newton).pack(fill="x")
+
+        tk.Button(frame, text="↺  Limpiar",
+                  bg=BORDER, fg=TEXT, font=FONT_LABEL, relief="flat", bd=0,
+                  padx=10, pady=6, cursor="hand2",
+                  command=lambda: [v.set("") for v in
+                                   [self.newt_masa, self.newt_fx,
+                                    self.newt_ff, self.newt_a]]
+                  ).pack(fill="x", pady=(6, 0))
+
+    def _simular_newton(self):
+        m   = get_val(self.newt_masa)
+        fx  = get_val(self.newt_fx)
+        ff  = get_val(self.newt_ff) or 0.0
+        a   = get_val(self.newt_a)
+        tm  = get_val(self.newt_t) or 8.0
+
+        # Resolver incógnita
+        if m is None and fx is not None and a is not None:
+            Fnet = fx - ff
+            if a == 0:
+                messagebox.showerror("Error", "Si a=0 la masa es indeterminada.")
                 return
-            datos = cinematica_mrua(float(v0.get()), 0,
-                                    float(t.get()), angulo=a_val)
-            res = (
-                f"► Alcance horizontal:    {datos['x_max']:.3f} m\n"
-                f"► Altura máxima:         {datos['y_max']:.3f} m\n"
-                f"► Ángulo de lanzamiento: {a_val}°\n"
-                f"► Velocidad inicial:     {float(v0.get())} m/s\n\n"
-                f"  Componentes:\n"
-                f"  v₀ₓ = {float(v0.get()):.2f}·cos({a_val}°)"
-                f" = {float(v0.get())*math.cos(math.radians(a_val)):.3f} m/s\n"
-                f"  v₀ᵧ = {float(v0.get()):.2f}·sin({a_val}°)"
-                f" = {float(v0.get())*math.sin(math.radians(a_val)):.3f} m/s\n"
-            )
-            resultado_box(tab, res)
-            mostrar_grafica(datos, "Tiro Parabólico", "parabolico")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos válidos.")
+            m = Fnet / a
+        elif fx is None and m is not None and a is not None:
+            fx = m * a + ff
+        elif a is None and m is not None and fx is not None:
+            Fnet = fx - ff
+            a = Fnet / m
+        elif m is not None and fx is not None:
+            Fnet = fx - ff
+            a = Fnet / m
+        else:
+            messagebox.showerror("Error",
+                "Ingresa al menos 2 de: Masa, Fuerza, Aceleración.")
+            return
 
-    tk.Button(tab, text="▶  Simular", bg=ACCENT, fg=BG,
-              font=FONT_SUB, relief="flat", bd=0,
-              padx=20, pady=8, cursor="hand2",
-              command=calcular).pack(pady=22)
-    return tab
+        if m <= 0:
+            messagebox.showwarning("Error", "La masa debe ser positiva.")
+            return
 
+        datos = segunda_ley(m, [fx], [0], rozamiento=ff, t_max=tm)
+        datos["v"] = datos["vx"]
 
-# ─────────────────────────────────────────────
-#  PANEL: 2ª LEY DE NEWTON
-# ─────────────────────────────────────────────
-
-def tab_newton(notebook):
-    tab = tk.Frame(notebook, bg=BG)
-    notebook.add(tab, text="  2ª Ley Newton  ")
-
-    tk.Label(tab, text="Segunda Ley de Newton",
-             bg=BG, fg=ACCENT, font=FONT_SUB).pack(pady=(20, 4))
-    tk.Label(tab, text="ΣF = m · a",
-             bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(pady=(0, 14))
-
-    frame = tk.Frame(tab, bg=PANEL, bd=0, padx=24, pady=18)
-    frame.pack(padx=40, fill="x")
-
-    masa  = make_entry(frame, "Masa m  (kg)", "5")
-    fx    = make_entry(frame, "Fuerza aplicada Fₓ  (N)", "20")
-    ff    = make_entry(frame, "Fuerza de rozamiento Ff  (N)", "3")
-    t_max = make_entry(frame, "Tiempo de simulación  (s)", "8")
-
-    def calcular():
-        try:
-            m   = float(masa.get())
-            fxv = float(fx.get())
-            ffv = float(ff.get())
-            tm  = float(t_max.get())
-            if m <= 0:
-                messagebox.showwarning("Error", "La masa debe ser positiva.")
-                return
-            datos = segunda_ley(m, [fxv], [0], rozamiento=ffv, t_max=tm)
-            datos["v"] = datos["v"]   # alias
-            res = (
-                f"► Aceleración resultante: {datos['a']:.4f} m/s²\n"
-                f"► Fuerza neta Fx:         {datos['Fx']:.3f} N\n"
-                f"► Fuerza neta Fy:         {datos['Fy']:.3f} N\n\n"
-                f"  Verificación:\n"
-                f"  a = ΣFₓ/m = ({fxv} − {ffv}) / {m}\n"
-                f"    = {datos['ax']:.4f} m/s²\n"
-            )
-            resultado_box(tab, res)
-            mostrar_grafica({"t": datos["t"], "x": datos["x"],
-                             "v": datos["vx"]},
-                            "2ª Ley de Newton", "newton")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos válidos.")
-
-    tk.Button(tab, text="▶  Simular", bg=ACCENT, fg=BG,
-              font=FONT_SUB, relief="flat", bd=0,
-              padx=20, pady=8, cursor="hand2",
-              command=calcular).pack(pady=22)
-    return tab
+        lines = [
+            f"  Masa          = {m:.4f} kg",
+            f"  Fuerza aplic. = {fx:.4f} N",
+            f"  Rozamiento    = {ff:.4f} N",
+            f"  Fuerza neta   = {fx - ff:.4f} N",
+            f"  Aceleración   = {datos['ax']:.4f} m/s²",
+            "",
+            f"  Verif: a = ΣF/m = {fx-ff:.3f}/{m:.3f}",
+            f"           = {datos['ax']:.4f} m/s²  ✔",
+        ]
+        self._show_result(lines)
+        self._plot({"t": datos["t"], "x": datos["x"], "v": datos["vx"]},
+                   "newton", "2ª Ley de Newton")
 
 
 # ─────────────────────────────────────────────
-#  VENTANA PRINCIPAL
+#  MAIN
 # ─────────────────────────────────────────────
 
 def main():
     root = tk.Tk()
-    root.title("Simulador de Física I")
-    root.configure(bg=BG)
-    root.geometry("620x580")
-    root.resizable(False, False)
-
-    # ── Header ──────────────────────────────
-    header = tk.Frame(root, bg=BG)
-    header.pack(fill="x", padx=30, pady=(28, 0))
-
-    tk.Label(header, text="FÍSICA I", bg=BG, fg=ACCENT,
-             font=FONT_TITLE).pack(side="left")
-    tk.Label(header, text=" Simulador",
-             bg=BG, fg=TEXT,
-             font=("Courier New", 22)).pack(side="left")
-
-    tk.Label(root,
-             text="Cinemática  ·  Dinámica de Fuerzas",
-             bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(anchor="w",
-                                                      padx=30,
-                                                      pady=(2, 16))
-
-    # ── Separador ───────────────────────────
-    tk.Frame(root, bg=BORDER, height=1).pack(fill="x", padx=30)
-
-    # ── Tabs ────────────────────────────────
-    style = ttk.Style()
-    style.theme_use("default")
-    style.configure("TNotebook",
-                    background=BG, borderwidth=0,
-                    tabmargins=[0, 8, 0, 0])
-    style.configure("TNotebook.Tab",
-                    background=PANEL, foreground=SUBTEXT,
-                    font=FONT_SMALL, padding=[14, 6],
-                    borderwidth=0)
-    style.map("TNotebook.Tab",
-              background=[("selected", ACCENT)],
-              foreground=[("selected", BG)],
-              font=[("selected", ("Courier New", 9, "bold"))])
-
-    notebook = ttk.Notebook(root, style="TNotebook")
-    notebook.pack(fill="both", expand=True,
-                  padx=22, pady=12)
-
-    tab_mrua(notebook)
-    tab_parabolico(notebook)
-    tab_newton(notebook)
-
-    # ── Footer ──────────────────────────────
-    tk.Label(root,
-             text="Ingresa los valores → Presiona ▶ Simular → Ver gráficas",
-             bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(pady=(0, 14))
-
+    app = SimuladorFisica(root)
     root.mainloop()
 
 
