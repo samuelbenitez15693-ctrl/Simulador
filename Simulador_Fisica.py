@@ -516,11 +516,11 @@ class SimuladorFisica:
         tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=(0, 10))
 
         tk.Label(frame,
-                 text="💡 Deja en blanco las incógnitas (necesitas 3 datos):",
+                 text="",
                  bg=PANEL, fg=ACCENT2, font=("Courier New", 11, "italic")
                  ).pack(anchor="w", pady=(0, 6))
 
-        self.mrua_v0 = make_entry(frame, "Vel. inicial  v₀  (m/s)", hint="? = incógnita")
+        self.mrua_v0 = make_entry(frame, "Vel. inicial  v₀  (m/s)", hint="")
         self.mrua_vf = make_entry(frame, "Vel. final    vf  (m/s)")
         self.mrua_a  = make_entry(frame, "Aceleración    a  (m/s²)")
         self.mrua_t  = make_entry(frame, "Tiempo         t  (s)")
@@ -576,14 +576,14 @@ class SimuladorFisica:
             return
 
         lines = [
-            f"  v₀  = {v0r:.4f} m/s",
-            f"  vf  = {vfr:.4f} m/s",
-            f"  a   = {ar:.4f} m/s²",
-            f"  t   = {tr:.4f} s",
-            f"  x   = {xr:.4f} m",
+            f"  v₀  = {v0r:.2f} m/s",
+            f"  vf  = {vfr:.2f} m/s",
+            f"  a   = {ar:.2f} m/s²",
+            f"  t   = {tr:.2f} s",
+            f"  x   = {xr:.2f} m",
             "",
-            f"  Verif: vf = {v0r:.3f} + {ar:.3f}×{tr:.3f}",
-            f"       = {v0r + ar*tr:.4f} m/s  ✔",
+            f"  Verif: vf = {v0r:.2f} + {ar:.2f}×{tr:.2f}",
+            f"       = {v0r + ar*tr:.2f} m/s  ✔",
         ]
         self._show_result(lines)
 
@@ -607,7 +607,7 @@ class SimuladorFisica:
         tk.Frame(frame, bg=BORDER, height=1).pack(fill="x", pady=(0, 10))
 
         tk.Label(frame,
-                 text="💡 Ingresa v₀+ángulo  O  alcance+ángulo  O  altura+ángulo:",
+                 text="",
                  bg=PANEL, fg=ACCENT2,
                  font=("Courier New", 11, "italic")).pack(anchor="w",
                                                            pady=(0, 6))
@@ -658,13 +658,13 @@ class SimuladorFisica:
             return
 
         lines = [
-            f"  v₀        = {v0r:.4f} m/s",
-            f"  θ         = {angr:.4f}°",
-            f"  v₀ₓ       = {v0xr:.4f} m/s",
-            f"  v₀ᵧ       = {v0yr:.4f} m/s",
-            f"  Alcance   = {xmr:.4f} m",
-            f"  Alt. máx  = {ymr:.4f} m",
-            f"  T. vuelo  = {tvr:.4f} s",
+            f"  v₀        = {v0r:.2f} m/s",
+            f"  θ         = {angr:.2f}°",
+            f"  v₀ₓ       = {v0xr:.2f} m/s",
+            f"  v₀ᵧ       = {v0yr:.2f} m/s",
+            f"  Alcance   = {xmr:.2f} m",
+            f"  Alt. máx  = {ymr:.2f} m",
+            f"  T. vuelo  = {tvr:.2f} s",
         ]
         self._show_result(lines)
 
@@ -749,14 +749,14 @@ class SimuladorFisica:
         datos["v"] = datos["vx"]
 
         lines = [
-            f"  Masa          = {m:.4f} kg",
-            f"  Fuerza aplic. = {fx:.4f} N",
-            f"  Rozamiento    = {ff:.4f} N",
-            f"  Fuerza neta   = {fx - ff:.4f} N",
-            f"  Aceleración   = {datos['ax']:.4f} m/s²",
+            f"  Masa          = {m:.2f} kg",
+            f"  Fuerza aplic. = {fx:.2f} N",
+            f"  Rozamiento    = {ff:.2f} N",
+            f"  Fuerza neta   = {fx - ff:.2f} N",
+            f"  Aceleración   = {datos['ax']:.2f} m/s²",
             "",
-            f"  Verif: a = ΣF/m = {fx-ff:.3f}/{m:.3f}",
-            f"           = {datos['ax']:.4f} m/s²  ✔",
+            f"  Verif: a = ΣF/m = {fx-ff:.2f}/{m:.2f}",
+            f"           = {datos['ax']:.2f} m/s²  ✔",
         ]
         self._show_result(lines)
         self._plot({"t": datos["t"], "x": datos["x"], "v": datos["vx"]},
