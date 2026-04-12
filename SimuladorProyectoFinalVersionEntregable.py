@@ -82,10 +82,10 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
                 and vf is None and x is None:
             steps += ["Ecuación:  vf = v₀ + a·t",
                       f"  vf = {v0} + ({a})·({t})",
-                      f"  vf = {v0+a*t:.4f} m/s",
+                      f"  vf = {v0+a*t:.2f} m/s",
                       "Ecuación:  x = v₀·t + ½·a·t²",
                       f"  x = {v0}·{t} + 0.5·{a}·{t}²",
-                      f"  x = {v0*t+0.5*a*t**2:.4f} m"]
+                      f"  x = {v0*t+0.5*a*t**2:.2f} m"]
             vf = v0 + a*t
             x  = v0*t + 0.5*a*t**2
 
@@ -93,10 +93,10 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
                 and a is None and x is None:
             steps += ["Ecuación:  a = (vf − v₀) / t",
                       f"  a = ({vf} − {v0}) / {t}",
-                      f"  a = {(vf-v0)/t:.4f} m/s²",
+                      f"  a = {(vf-v0)/t:.2f} m/s²",
                       "Ecuación:  x = ½·(v₀+vf)·t",
                       f"  x = 0.5·({v0}+{vf})·{t}",
-                      f"  x = {0.5*(v0+vf)*t:.4f} m"]
+                      f"  x = {0.5*(v0+vf)*t:.2f} m"]
             a = (vf-v0)/t
             x = 0.5*(v0+vf)*t
 
@@ -106,12 +106,12 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
                 return None, "Si a=0 el tiempo es indeterminado.", []
             steps += ["Ecuación:  t = (vf − v₀) / a",
                       f"  t = ({vf} − {v0}) / {a}",
-                      f"  t = {(vf-v0)/a:.4f} s"]
+                      f"  t = {(vf-v0)/a:.2f} s"]
             t = (vf-v0)/a
             x = 0.5*(v0+vf)*t
             steps += ["Ecuación:  x = ½·(v₀+vf)·t",
-                      f"  x = 0.5·({v0}+{vf})·{t:.4f}",
-                      f"  x = {x:.4f} m"]
+                      f"  x = 0.5·({v0}+{vf})·{t:.2f}",
+                      f"  x = {x:.2f} m"]
 
         elif v0 is not None and a is not None and x is not None \
                 and vf is None and t is None:
@@ -119,35 +119,35 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
             if disc < 0:
                 return None, "Discriminante negativo — sin solución real.", []
             steps += ["Ecuación:  vf² = v₀² + 2·a·x",
-                      f"  vf² = {v0}² + 2·{a}·{x}  =  {disc:.4f}",
-                      f"  vf  = √{disc:.4f}  =  {math.sqrt(disc):.4f} m/s"]
+                      f"  vf² = {v0}² + 2·{a}·{x}  =  {disc:.2f}",
+                      f"  vf  = √{disc:.2f}  =  {math.sqrt(disc):.2f} m/s"]
             vf = math.sqrt(disc)
             t  = (vf-v0)/a if a != 0 else (x/v0 if v0 != 0 else None)
             if t is not None:
-                steps += [f"  t   = (vf−v₀)/a  =  {t:.4f} s"]
+                steps += [f"  t   = (vf−v₀)/a  =  {t:.2f} s"]
 
         elif vf is not None and a is not None and t is not None \
                 and v0 is None and x is None:
             steps += ["Ecuación:  v₀ = vf − a·t",
                       f"  v₀ = {vf} − {a}·{t}",
-                      f"  v₀ = {vf-a*t:.4f} m/s"]
+                      f"  v₀ = {vf-a*t:.2f} m/s"]
             v0 = vf-a*t
             x  = v0*t + 0.5*a*t**2
             steps += ["Ecuación:  x = v₀·t + ½·a·t²",
-                      f"  x = {v0:.4f}·{t} + 0.5·{a}·{t}²",
-                      f"  x = {x:.4f} m"]
+                      f"  x = {v0:.2f}·{t} + 0.5·{a}·{t}²",
+                      f"  x = {x:.2f} m"]
 
         elif v0 is not None and vf is not None and x is not None \
                 and a is None and t is None:
             steps += ["Ecuación:  a = (vf² − v₀²) / (2·x)",
                       f"  a = ({vf}² − {v0}²) / (2·{x})",
-                      f"  a = {(vf**2-v0**2)/(2*x):.4f} m/s²"]
+                      f"  a = {(vf**2-v0**2)/(2*x):.2f} m/s²"]
             a = (vf**2-v0**2)/(2*x)
             t = 2*x/(v0+vf) if (v0+vf) != 0 else None
             if t:
                 steps += ["Ecuación:  t = 2x / (v₀+vf)",
                           f"  t = 2·{x} / ({v0}+{vf})",
-                          f"  t = {t:.4f} s"]
+                          f"  t = {t:.2f} s"]
 
         elif a is not None and t is not None and x is not None \
                 and v0 is None and vf is None:
@@ -155,10 +155,10 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
             if v0 is not None: vf = v0+a*t
             steps += ["Ecuación:  v₀ = (x − ½·a·t²) / t",
                       f"  v₀ = ({x} − 0.5·{a}·{t}²) / {t}",
-                      f"  v₀ = {v0:.4f} m/s",
+                      f"  v₀ = {v0:.2f} m/s",
                       "Ecuación:  vf = v₀ + a·t",
-                      f"  vf = {v0:.4f} + {a}·{t}",
-                      f"  vf = {vf:.4f} m/s"]
+                      f"  vf = {v0:.2f} + {a}·{t}",
+                      f"  vf = {vf:.2f} m/s"]
 
         elif vf is not None and t is not None and x is not None \
                 and v0 is None and a is None:
@@ -166,10 +166,10 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
             if v0 is not None: a = (vf-v0)/t
             steps += ["Ecuación:  v₀ = 2x/t − vf",
                       f"  v₀ = 2·{x}/{t} − {vf}",
-                      f"  v₀ = {v0:.4f} m/s",
+                      f"  v₀ = {v0:.2f} m/s",
                       "Ecuación:  a = (vf − v₀) / t",
-                      f"  a = ({vf} − {v0:.4f}) / {t}",
-                      f"  a = {a:.4f} m/s²"]
+                      f"  a = ({vf} − {v0:.2f}) / {t}",
+                      f"  a = {a:.2f} m/s²"]
 
         elif v0 is not None and t is not None and x is not None \
                 and a is None and vf is None:
@@ -177,10 +177,10 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
             if a is not None: vf = v0+a*t
             steps += ["Ecuación:  a = 2·(x − v₀·t) / t²",
                       f"  a = 2·({x} − {v0}·{t}) / {t}²",
-                      f"  a = {a:.4f} m/s²",
+                      f"  a = {a:.2f} m/s²",
                       "Ecuación:  vf = v₀ + a·t",
-                      f"  vf = {v0} + {a:.4f}·{t}",
-                      f"  vf = {vf:.4f} m/s"]
+                      f"  vf = {v0:.2f} + {a:.2f}·{t}",
+                      f"  vf = {vf:.2f} m/s"]
 
         else:
             if v0 is not None and a is not None and t is not None:
@@ -196,8 +196,8 @@ def resolver_mrua(v0=None, vf=None, a=None, t=None, x=None):
             pass
         steps += ["",
                   "✔ Verificación:",
-                  f"  vf = v₀ + a·t  →  {v0:.4f} + {a:.4f}·{t:.4f} = {v0+a*t:.4f} m/s",
-                  f"  x  = v₀·t+½a·t²  →  {x:.4f} m"]
+                  f"  vf = v₀ + a·t  →  {v0:.2f} + {a:.2f}·{t:.2f} = {v0+a*t:.2f} m/s",
+                  f"  x  = v₀·t+½a·t²  →  {x:.2f} m"]
 
         return {"v0": v0, "vf": vf, "a": a, "t": t, "x": x}, None, steps
     except Exception as e:
@@ -214,17 +214,17 @@ def resolver_parabolico(v0=None, angulo=None, x_max=None, y_max=None):
             t_v = 2*v0y/g;  x_m = v0x*t_v;  y_m = v0y**2/(2*g)
             steps += [
                 "Descomponer v₀ en componentes:",
-                f"  v₀ₓ = v₀·cos(θ) = {v0}·cos({angulo}°) = {v0x:.4f} m/s",
-                f"  v₀ᵧ = v₀·sin(θ) = {v0}·sin({angulo}°) = {v0y:.4f} m/s",
+                f"  v₀ₓ = v₀·cos(θ) = {v0}·cos({angulo}°) = {v0x:.2f} m/s",
+                f"  v₀ᵧ = v₀·sin(θ) = {v0}·sin({angulo}°) = {v0y:.2f} m/s",
                 "Tiempo de vuelo:  T = 2·v₀ᵧ / g",
-                f"  T = 2·{v0y:.4f} / 9.8 = {t_v:.4f} s",
+                f"  T = 2·{v0y:.2f} / 9.8 = {t_v:.2f} s",
                 "Alcance máximo:  xₘₐₓ = v₀ₓ · T",
-                f"  xₘₐₓ = {v0x:.4f} · {t_v:.4f} = {x_m:.4f} m",
+                f"  xₘₐₓ = {v0x:.2f} · {t_v:.2f} = {x_m:.2f} m",
                 "Altura máxima:  yₘₐₓ = v₀ᵧ² / (2g)",
-                f"  yₘₐₓ = {v0y:.4f}² / (2·9.8) = {y_m:.4f} m",
+                f"  yₘₐₓ = {v0y:.2f}² / (2·9.8) = {y_m:.2f} m",
                 "",
                 "✔ Verificación:",
-                f"  xₘₐₓ = v₀²·sin(2θ)/g = {v0**2*math.sin(2*rad)/g:.4f} m",
+                f"  xₘₐₓ = v₀²·sin(2θ)/g = {v0**2*math.sin(2*rad)/g:.2f} m",
             ]
             return {"v0":v0,"angulo":angulo,"t_vuelo":t_v,
                     "x_max":x_m,"y_max":y_m,"v0x":v0x,"v0y":v0y}, None, steps
@@ -237,12 +237,12 @@ def resolver_parabolico(v0=None, angulo=None, x_max=None, y_max=None):
             steps += [
                 "Despejar v₀ de:  xₘₐₓ = v₀²·sin(2θ) / g",
                 f"  v₀ = √( xₘₐₓ·g / sin(2θ) )",
-                f"  v₀ = √( {x_max}·9.8 / sin({2*angulo}°) ) = {v0c:.4f} m/s",
-                f"  v₀ₓ = {v0x:.4f} m/s     v₀ᵧ = {v0y:.4f} m/s",
-                f"  T   = {t_v:.4f} s        yₘₐₓ = {y_m:.4f} m",
+                f"  v₀ = √( {x_max}·9.8 / sin({2*angulo}°) ) = {v0c:.2f} m/s",
+                f"  v₀ₓ = {v0x:.2f} m/s     v₀ᵧ = {v0y:.2f} m/s",
+                f"  T   = {t_v:.2f} s        yₘₐₓ = {y_m:.2f} m",
                 "",
                 "✔ Verificación:",
-                f"  xₘₐₓ = v₀²·sin(2θ)/g = {v0c**2*math.sin(2*rad)/g:.4f} m",
+                f"  xₘₐₓ = v₀²·sin(2θ)/g = {v0c**2*math.sin(2*rad)/g:.2f} m",
             ]
             return {"v0":v0c,"angulo":angulo,"t_vuelo":t_v,
                     "x_max":x_max,"y_max":y_m,"v0x":v0x,"v0y":v0y}, None, steps
@@ -255,17 +255,17 @@ def resolver_parabolico(v0=None, angulo=None, x_max=None, y_max=None):
             t_v = 2*v0y/g;  x_m = v0x*t_v
             steps += [
                 "Despejar v₀ᵧ de:  yₘₐₓ = v₀ᵧ² / (2g)",
-                f"  v₀ᵧ = √(2·g·yₘₐₓ) = √(2·9.8·{y_max}) = {v0y:.4f} m/s",
+                f"  v₀ᵧ = √(2·g·yₘₐₓ) = √(2·9.8·{y_max}) = {v0y:.2f} m/s",
                 "Obtener v₀:  v₀ = v₀ᵧ / sin(θ)",
-                f"  v₀ = {v0y:.4f} / sin({angulo}°) = {v0c:.4f} m/s",
-                f"  v₀ₓ = {v0x:.4f} m/s",
+                f"  v₀ = {v0y:.2f} / sin({angulo}°) = {v0c:.2f} m/s",
+                f"  v₀ₓ = {v0x:.2f} m/s",
                 "Tiempo de vuelo:  T = 2·v₀ᵧ / g",
-                f"  T = {t_v:.4f} s",
+                f"  T = {t_v:.2f} s",
                 "Alcance:  xₘₐₓ = v₀ₓ · T",
-                f"  xₘₐₓ = {v0x:.4f}·{t_v:.4f} = {x_m:.4f} m",
+                f"  xₘₐₓ = {v0x:.2f}·{t_v:.2f} = {x_m:.2f} m",
                 "",
                 "✔ Verificación:",
-                f"  yₘₐₓ = v₀ᵧ²/(2g) = {v0y**2/(2*g):.4f} m",
+                f"  yₘₐₓ = v₀ᵧ²/(2g) = {v0y**2/(2*g):.2f} m",
             ]
             return {"v0":v0c,"angulo":angulo,"t_vuelo":t_v,
                     "x_max":x_m,"y_max":y_max,"v0x":v0x,"v0y":v0y}, None, steps
@@ -280,13 +280,13 @@ def resolver_parabolico(v0=None, angulo=None, x_max=None, y_max=None):
             t_v = 2*v0y/g;  y_m = v0y**2/(2*g)
             steps += [
                 "Despejar θ de:  xₘₐₓ = v₀²·sin(2θ) / g",
-                f"  sin(2θ) = xₘₐₓ·g / v₀² = {x_max}·9.8 / {v0}² = {val:.4f}",
-                f"  θ = ½·arcsin({val:.4f}) = {ang:.4f}°",
-                f"  v₀ₓ = {v0x:.4f} m/s     v₀ᵧ = {v0y:.4f} m/s",
-                f"  T   = {t_v:.4f} s        yₘₐₓ = {y_m:.4f} m",
+                f"  sin(2θ) = xₘₐₓ·g / v₀² = {x_max}·9.8 / {v0}² = {val:.2f}",
+                f"  θ = ½·arcsin({val:.2f}) = {ang:.2f}°",
+                f"  v₀ₓ = {v0x:.2f} m/s     v₀ᵧ = {v0y:.2f} m/s",
+                f"  T   = {t_v:.2f} s        yₘₐₓ = {y_m:.2f} m",
                 "",
                 "✔ Verificación:",
-                f"  xₘₐₓ = v₀²·sin(2θ)/g = {v0**2*math.sin(2*rad)/g:.4f} m",
+                f"  xₘₐₓ = v₀²·sin(2θ)/g = {v0**2*math.sin(2*rad)/g:.2f} m",
             ]
             return {"v0":v0,"angulo":ang,"t_vuelo":t_v,
                     "x_max":x_max,"y_max":y_m,"v0x":v0x,"v0y":v0y}, None, steps
@@ -1137,20 +1137,20 @@ class SimuladorFisica:
 
         steps = [
             "Datos del problema:",
-            f"  m  = {m:.4f} kg",
-            f"  F  = {fx:.4f} N",
-            f"  Ff = {ff:.4f} N",
+            f"  m  = {m:.2f} kg",
+            f"  F  = {fx:.2f} N",
+            f"  Ff = {ff:.2f} N",
             "",
             "Fuerza neta: Fnet = F − Ff",
-            f"  Fnet = {fx:.4f} − {ff:.4f}",
-            f"  Fnet = {Fnet:.4f} N",
+            f"  Fnet = {fx:.2f} − {ff:.2f}",
+            f"  Fnet = {Fnet:.2f} N",
             "",
             "Segunda Ley: a = Fnet / m",
-            f"  a = {Fnet:.4f} / {m:.4f}",
-            f"  a = {ar:.4f} m/s²",
+            f"  a = {Fnet:.2f} / {m:.2f}",
+            f"  a = {ar:.2f} m/s²",
             "",
             "✔ Verificación: ΣF = m·a",
-            f"  {m:.4f} × {ar:.4f} = {m*ar:.4f} N  ✔",
+            f"  {m:.2f} × {ar:.2f} = {m*ar:.2f} N  ✔",
         ]
         self._show_solution(steps, ", ".join(solved) if solved else "")
 
