@@ -7,6 +7,7 @@ Requiere: pip install matplotlib numpy
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+from turtle import update
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -295,8 +296,12 @@ class SimuladorFisica:
         self.root.configure(bg=BG)
         self.root.geometry("1280x820")
         self.root.minsize(1100, 720)
-
+        
         self._build_ui()
+
+        self.animando = False
+
+       
 
     # ── UI PRINCIPAL ─────────────────────────
     def _build_ui(self):
@@ -500,6 +505,43 @@ class SimuladorFisica:
 
         self.canvas.draw()
 
+        # Animar movimiento en el gráfico de posición
+        def _animar_movimiento(self, datos, modo): 
+            self.animando = True
+            
+            t = datos["t"]
+            if modo == "mrua":
+                x = datos["x"]
+                y = np.zeros_like(x)
+
+            elif modo == "parabolico":
+                x = datos["x"]
+                y = datos["y"]
+
+            elif modo == "newton":
+                x = datos["x"]
+                y = np.zeros_like(x)
+
+            ax = self.axes[0]
+            ax.clear()
+            ax.set_xlim(0, max(x)*1.1)
+            ax.set_ylim(0, max(y)*1.2 if max(y) > 0 else 10)
+            ax.grid(True)
+            ax.set_title("Animacion")
+
+            linea, = ax.plot([], [], lw=2)
+            punto, = ax.plot([], [], "ro")
+            def update(i):
+                if not self.animando:
+                    return
+                
+                linea.set_data(x[:i], y[:i])
+                punto.set_data(x[i], y[i])
+
+                self.canvas.draw()
+            for i in range(len(t)):
+                self.root.after(i * 15, lambda i=i: update(i))
+    
     # ─────────────────────────────────────────
     #  PESTAÑA: MRUA
     # ─────────────────────────────────────────
@@ -590,6 +632,7 @@ class SimuladorFisica:
         # Graficar con los valores resueltos
         datos = cinematica_mrua(v0r, ar, tr)
         self._plot(datos, "mrua", "MRUA – Cinemática")
+        self._animar_movimiento(datos, "mrua")
 
     # ─────────────────────────────────────────
     #  PESTAÑA: TIRO PARABÓLICO
@@ -670,6 +713,7 @@ class SimuladorFisica:
 
         datos = cinematica_mrua(v0r, 0, tvr * 1.05, angulo=angr)
         self._plot(datos, "parabolico", "Tiro Parabólico")
+        self._animar_movimiento(datos, "parabolico")
 
     # ─────────────────────────────────────────
     #  PESTAÑA: 2ª LEY DE NEWTON
@@ -761,7 +805,9 @@ class SimuladorFisica:
         self._show_result(lines)
         self._plot({"t": datos["t"], "x": datos["x"], "v": datos["vx"]},
                    "newton", "2ª Ley de Newton")
+        
 
+        self._animar_movimiento({"t" : datos["t"], "x" : datos["x"], "y": np.zeros_like(datos["x"])}, "newton")
 
 # ─────────────────────────────────────────────
 #  MAIN
