@@ -14,26 +14,26 @@ import math
 # ═══════════════════════════════════════════════════════════════════
 #  PALETA  (idéntica a v2)
 # ═══════════════════════════════════════════════════════════════════
-BG        = "#0f1117"
-PANEL     = "#1a1d26"
-PANEL2    = "#1f2335"
-ACCENT    = "#00d4aa"
-ACCENT2   = "#00b890"
-ACCENT3   = "#7ee8d0"
-ACCENT_RED= "#ff4d6d"
-ACCENT_YEL= "#ffd166"
-ACCENT_BLU= "#4ecdc4"
-TEXT      = "#e8f4f0"
-SUBTEXT   = "#7a9e97"
-SUCCESS   = "#00d4aa"
-ERROR     = "#ff4d6d"
-WARN      = "#ffd166"
-BORDER    = "#2a3340"
-BG_ENTRY  = "#141720"
-SIDEBAR   = "#13161e"
-LINE1     = "#00d4aa"
-LINE2     = "#ffd166"
-LINE3     = "#ff6b6b"
+BG        = "#000000"
+PANEL     = "#333333"
+PANEL2    = "#555555"
+ACCENT    = "#00FF00"
+ACCENT2   = "#00AA00"
+ACCENT3   = "#66FF66"
+ACCENT_RED= "#FF0000"
+ACCENT_YEL= "#FFFF00"
+ACCENT_BLU= "#00FFFF"
+TEXT      = "#FFFFFF"
+SUBTEXT   = "#CCCCCC"
+SUCCESS   = "#00FF00"
+ERROR     = "#FF0000"
+WARN      = "#FFFF00"
+BORDER    = "#666666"
+BG_ENTRY  = "#222222"
+SIDEBAR   = "#111111"
+LINE1     = "#00FF00"
+LINE2     = "#00AA00"
+LINE3     = "#008000"
 FM        = "JetBrains Mono"
 
 # ═══════════════════════════════════════════════════════════════════
@@ -462,6 +462,33 @@ class SimuladorFisica:
         self.left_panel.pack(side="left", fill="y", padx=(12, 6), pady=12)
         self.left_panel.pack_propagate(False)
 
+        self.left_scroll_container = tk.Frame(self.left_panel, bg=PANEL)
+        self.left_scroll_container.pack(fill="both", expand=True, side="top")
+
+        self.left_scroll_canvas = tk.Canvas(self.left_scroll_container,
+                                           bg=PANEL, highlightthickness=0)
+        self.left_scroll_canvas.pack(side="left", fill="both", expand=True)
+
+        self.left_scrollbar = tk.Scrollbar(self.left_scroll_container,
+                                          orient="vertical",
+                                          command=self.left_scroll_canvas.yview,
+                                          bg=PANEL, troughcolor=PANEL2)
+        self.left_scrollbar.pack(side="right", fill="y")
+
+        self.left_scroll_canvas.configure(yscrollcommand=self.left_scrollbar.set)
+        self.left_scroll_frame = tk.Frame(self.left_scroll_canvas, bg=PANEL)
+        self._left_scroll_window = self.left_scroll_canvas.create_window(
+            (0, 0), window=self.left_scroll_frame, anchor="nw")
+
+        self.left_scroll_frame.bind(
+            "<Configure>",
+            lambda e: self.left_scroll_canvas.configure(
+                scrollregion=self.left_scroll_canvas.bbox("all")))
+        self.left_scroll_canvas.bind(
+            "<Configure>",
+            lambda e: self.left_scroll_canvas.itemconfigure(
+                self._left_scroll_window, width=e.width))
+
         # Panel derecho (gráficas)
         self.right_panel = tk.Frame(content, bg=PANEL)
         self.right_panel.pack(side="left", fill="both", expand=True,
@@ -858,7 +885,7 @@ class SimuladorFisica:
     #  PESTAÑA: MRUA
     # ══════════════════════════════════════
     def _build_mrua(self):
-        f = tk.Frame(self.left_panel, bg=PANEL)
+        f = tk.Frame(self.left_scroll_frame, bg=PANEL)
         self.tab_frames["mrua"] = f
 
         card = tk.Frame(f, bg=PANEL2)
@@ -950,7 +977,7 @@ class SimuladorFisica:
     #  PESTAÑA: TIRO PARABÓLICO
     # ══════════════════════════════════════
     def _build_parabolico(self):
-        f = tk.Frame(self.left_panel, bg=PANEL)
+        f = tk.Frame(self.left_scroll_frame, bg=PANEL)
         self.tab_frames["parabolico"] = f
 
         card = tk.Frame(f, bg=PANEL2)
@@ -1046,7 +1073,7 @@ class SimuladorFisica:
     #  PESTAÑA: 2ª LEY DE NEWTON
     # ══════════════════════════════════════
     def _build_newton(self):
-        f = tk.Frame(self.left_panel, bg=PANEL)
+        f = tk.Frame(self.left_scroll_frame, bg=PANEL)
         self.tab_frames["newton"] = f
 
         card = tk.Frame(f, bg=PANEL2)
