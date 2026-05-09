@@ -84,3 +84,5 @@ def resolver_mrua(v0=None, vf=None, a=None, t =None, x=None):
             pasos.append(
                 f"x = {x:.2f} m"
             )
+
+            
