@@ -84,5 +84,48 @@ def resolver_mrua(v0=None, vf=None, a=None, t =None, x=None):
             pasos.append(
                 f"x = {x:.2f} m"
             )
+#------------------------------
+#CASO 2
+#------------------------------
+elif v0 is not None and vf is not None and t is not None:
+    a = (vf - v0) / t
+    x = 0.5*(v0 + vf) * t
+    pasos.append("Usamos: ")
+    pasos.append("a = (vf - v0) / t")
+    pasos.append(f"a = ({vf} - {v0}) / {t}")
+    pasos.append( f"a = {a:.2f} m/s^2" )
+    pasos.append("")
+    pasos.append("Usamos: ")
+    pasos.append("x = 0.5*(v0 + vf) * t")
+    pasos.append(f"x = 0.5*({v0} + {vf}) * ({t})")
+    pasos.append(f"x = {x:.2f} m")
+    
+#------------------------------
+#CASO 3
+#------------------------------
+elif v0 is not None and vf is not None  and a is not None:
+    t = (vf - v0) / ax = 0.5
+    x = 0.5*(v0 + vf) * t
+    pasos.append("Usamos: ")
+    pasos.append("t = (vf - v0) / a")
+    pasos.append(f"t = ({vf} - {v0}) / {a}")
+    pasos.append( f"t = {t:.2f} s" )
+    pasos.append("")
+    pasos.append("Usamos: ")
+    pasos.append("x = 0.5*(v0 + vf) * t")
+    pasos.append(f"x = 0.5*({v0} + {vf}) * ({t:.2f})")
+    pasos.append(f"x = {x:.2f} m")
+    
+#------------------------------
+#CASO 4
+#------------------------------
+elif v0 is not None and a is not None and x is not None:
+    descriminante = v0**2 + 2*a*x
+    if descriminante < 0:
+        return None, "Error: No hay solución real para el tiempo con los valores dados.", pasos
+    vf = math.sqrt(descriminante)
+    t = (vf - v0) / a
+    pasos.append("Usamos: ")
+    pasos.append("vf = v0^2 + 2*a*x")
 
             
